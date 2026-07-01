@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block title %}Investigate — {{ alert.title[:40] }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('alert_library') }}" class="breadcrumb">← Alert Library</a>
+        <h1 class="page-title inv-title">{{ alert.title }}</h1>
+        <div class="alert-meta-row">
+            <span class="sev-badge sev-{{ alert.severity }}">{{ alert.severity.upper() }}</span>
+            <span class="cat-tag">{{ alert.category }}</span>
+            <span class="mono text-sm">{{ alert.source_ip or 'N/A' }}</span>
+            <span class="mitre-tag">{{ alert.mitre_mapping.get('technique','') }} — {{ alert.mitre_mapping.get('name','') }}</span>
+        </div>
+    </div>
+    <div class="inv-status-badge status-{{ inv.status }}">
+        {{ inv.status.replace('_',' ').upper() }}
+    </div>
+</div>
+
+<div class="inv-layout">
+    <!-- Left: tabs + content -->
+    <div class="inv-main">
+        <div class="tab-bar">
+            <button class="tab-btn active" data-tab="overview">Overview</button>
+            <button class="tab-btn" data-tab="logs">Raw Logs</button>
+            <button class="tab-btn" data-tab="timeline">Timeline</button>
+            <button class="tab-btn" data-tab="ioc">IOC Analysis</button>
+            <button class="tab-btn" data-tab="host">Host & User</button>
+            <button class="tab-btn" data-tab="mitre">MITRE ATT&CK</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div class="tab-panel active" id="tab-overview">
+            <div class="inv-card">
+                <h3 class="inv-section-title">Alert Description</h3>
+                <p class="inv-description">{{ alert.description }}</p>
+            </div>
+            <div class="inv-card">
+                <h3 class="inv-section-title">Detection Source</h3>
+                <div class="source-info">
+                    <div class="source-item"><span class="source-key">Source</span><span class="source-val">{{ alert.source }}</span></div>
+                    <div class="source-item"><span class="source-key">Source IP</span><span class="source-val mono">{{ alert.source_ip or 'N/A' }}</span></div>
+                    <div class="source-item"><span class="source-key">Dest IP</span><span class="source-val mono">{{ alert.dest_ip or 'N/A' }}</span></div>
+                    <div class="source-item"><span class="source-key">Hostname</span><span class="source-val mono">{{ alert.hostname or 'N/A' }}</span></div>
+                    <div class="source-item"><span class="source-key">Username</span><span class="source-val mono">{{ alert.username or 'N/A' }}</span></div>
+                </div>
+            </div>
+            {% if alert.hint %}
+            <div class="hint-card" id="hintCard">
+                <div class="hint-header">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                    <span>Analyst Hint</span>
+                    <button class="hint-toggle" onclick="toggleHint()">Show Hint</button>
+                </div>
+                <p class="hint-text" id="hintText" style="display:none">{{ alert.hint }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- LOGS TAB -->
+        <div class="tab-panel" id="tab-logs">
+            <div class="log-toolbar">
+                <input type="text" id="logSearch" placeholder="Search logs…" class="filter-input" oninput="filterLogs()">
+                <div class="log-type-filters">
+                    {% set log_types = logs | map(attribute='log_type') | list | unique | list %}
+                    <button class="log-type-btn active" data-type="all" onclick="filterLogType('all',this)">All</button>
+                    {% for lt in log_types %}
+                    <button class="log-type-btn" data-type="{{ lt }}" onclick="filterLogType('{{ lt }}',this)">{{ lt.replace('_',' ').title() }}</button>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="log-viewer" id="logViewer">
+                {% for log in logs %}
+                <div class="log-entry {% if log.highlighted %}log-highlight{% endif %}" data-logtype="{{ log.log_type }}" data-raw="{{ log.raw_log | lower }}">
+                    <div class="log-entry-header">
+                        <span class="log-ts">{{ log.timestamp }}</span>
+                        <span class="log-type-tag type-{{ log.log_type }}">{{ log.log_type.replace('_',' ').upper() }}</span>
+                        {% if log.event_id %}<span class="log-evid">Event: {{ log.event_id }}</span>{% endif %}
+                        {% if log.source_ip %}<span class="log-ip mono">{{ log.source_ip }}</span>{% endif %}
+                        {% if log.highlighted %}<span class="log-ioc-flag">⚑ KEY LOG</span>{% endif %}
+                    </div>
+                    <pre class="log-raw">{{ log.raw_log }}</pre>
+                </div>
+                {% endfor %}
+                {% if not logs %}
+                <div class="empty-state"><p>No logs available for this alert.</p></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TIMELINE TAB -->
+        <div class="tab-panel" id="tab-timeline">
+            <div class="timeline">
+                {% for event in timeline %}
+                <div class="timeline-item sev-tl-{{ event.severity }}">
+                    <div class="tl-dot"></div>
+                    <div class="tl-content">
+                        <div class="tl-header">
+                            <span class="tl-time mono">{{ event.event_time }}</span>
+                            <span class="tl-type">{{ event.event_type }}</span>
+                            <span class="tl-source">{{ event.source }}</span>
+                        </div>
+                        <p class="tl-desc">{{ event.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not timeline %}
+                <div class="empty-state"><p>No timeline events available.</p></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- IOC TAB -->
+        <div class="tab-panel" id="tab-ioc">
+            {% if iocs %}
+            <div class="ioc-grid">
+                {% for ioc in iocs %}
+                <div class="ioc-card {% if ioc.malicious %}ioc-malicious{% else %}ioc-benign{% endif %}">
+                    <div class="ioc-card-header">
+                        <span class="ioc-type-badge">{{ ioc.ioc_type.upper() }}</span>
+                        {% if ioc.malicious %}
+                        <span class="ioc-verdict-badge verdict-malicious">⚠ MALICIOUS</span>
+                        {% else %}
+                        <span class="ioc-verdict-badge verdict-benign">✓ BENIGN</span>
+                        {% endif %}
+                    </div>
+                    <div class="ioc-value mono">{{ ioc.value }}</div>
+                    <div class="ioc-desc">{{ ioc.description }}</div>
+                    <div class="ioc-actions">
+                        <label class="ioc-confirm-label">
+                            <input type="checkbox" class="ioc-confirm-cb" data-ioc="{{ ioc.value }}" {% if inv.status == 'completed' %}disabled{% endif %}>
+                            Confirm as IOC
+                        </label>
+                        <a href="https://www.virustotal.com/gui/search/{{ ioc.value }}" target="_blank" class="btn btn-xs btn-ghost">VT →</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>No IOCs identified for this alert.</p></div>
+            {% endif %}
+        </div>
+
+        <!-- HOST & USER TAB -->
+        <div class="tab-panel" id="tab-host">
+            <div class="two-col">
+                <div class="inv-card">
+                    <h3 class="inv-section-title">Host Information</h3>
+                    {% if alert.host_info %}
+                    <div class="info-table">
+                        {% for k, v in alert.host_info.items() %}
+                        <div class="info-row">
+                            <span class="info-key">{{ k.replace('_',' ').title() }}</span>
+                            <span class="info-val {% if v is string %}mono{% endif %}">
+                                {% if v is iterable and v is not string %}
+                                {{ v | join(', ') }}
+                                {% else %}
+                                {{ v }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No host information available.</p>
+                    {% endif %}
+                </div>
+                <div class="inv-card">
+                    <h3 class="inv-section-title">User Information</h3>
+                    {% if alert.user_info %}
+                    <div class="info-table">
+                        {% for k, v in alert.user_info.items() %}
+                        <div class="info-row">
+                            <span class="info-key">{{ k.replace('_',' ').title() }}</span>
+                            <span class="info-val">{{ v }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No user information available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- MITRE TAB -->
+        <div class="tab-panel" id="tab-mitre">
+            {% if alert.mitre_mapping %}
+            <div class="mitre-card">
+                <div class="mitre-header">
+                    <svg class="mitre-logo" viewBox="0 0 40 40"><rect width="40" height="40" rx="4" fill="#1e293b"/><text x="4" y="28" font-size="16" font-weight="bold" fill="#00d4ff">M</text></svg>
+                    <div>
+                        <div class="mitre-technique-id">{{ alert.mitre_mapping.get('technique','N/A') }}</div>
+                        <div class="mitre-technique-name">{{ alert.mitre_mapping.get('name','N/A') }}</div>
+                    </div>
+                </div>
+                <div class="mitre-detail">
+                    <div class="mitre-row"><span class="mitre-key">Tactic</span><span class="mitre-val">{{ alert.mitre_mapping.get('tactic','N/A') }}</span></div>
+                    <div class="mitre-row"><span class="mitre-key">Technique</span><span class="mitre-val mono">{{ alert.mitre_mapping.get('technique','N/A') }}</span></div>
+                    <div class="mitre-row"><span class="mitre-key">Name</span><span class="mitre-val">{{ alert.mitre_mapping.get('name','N/A') }}</span></div>
+                </div>
+                {% if alert.mitre_mapping.get('url') %}
+                <a href="{{ alert.mitre_mapping.url }}" target="_blank" class="btn btn-primary mt-4">View on MITRE ATT&CK →</a>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="empty-state"><p>No MITRE ATT&CK mapping available.</p></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: Workflow panel -->
+    <div class="inv-sidebar">
+        <div class="workflow-panel">
+            <h3 class="workflow-title">Investigation Workflow</h3>
+
+            <!-- Analyst Notes -->
+            <div class="workflow-section">
+                <label class="workflow-label">Analyst Notes</label>
+                <textarea id="analystNotes" class="notes-textarea" placeholder="Document your findings, steps taken, evidence observed…" {% if inv.status == 'completed' %}readonly{% endif %}>{{ inv.analyst_notes or '' }}</textarea>
+                {% if inv.status != 'completed' %}
+                <button class="btn btn-sm btn-ghost mt-2" onclick="saveNotes()">Save Notes</button>
+                {% endif %}
+            </div>
+
+            <!-- Verdict -->
+            {% if inv.status != 'completed' %}
+            <div class="workflow-section">
+                <label class="workflow-label">Verdict</label>
+                <div class="verdict-options">
+                    <label class="verdict-opt verdict-tp">
+                        <input type="radio" name="verdict" value="true_positive">
+                        <span class="verdict-icon">🚨</span>
+                        <span>True Positive</span>
+                    </label>
+                    <label class="verdict-opt verdict-fp">
+                        <input type="radio" name="verdict" value="false_positive">
+                        <span class="verdict-icon">✅</span>
+                        <span>False Positive</span>
+                    </label>
+                    <label class="verdict-opt verdict-esc">
+                        <input type="radio" name="verdict" value="escalated">
+                        <span class="verdict-icon">⬆️</span>
+                        <span>Escalate</span>
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-full" onclick="submitInvestigation({{ inv.id }})">
+                Submit Investigation
+            </button>
+            {% else %}
+            <!-- Completed view -->
+            <div class="completed-badge">
+                <div class="completed-icon">{% if inv.verdict == 'true_positive' %}🚨{% elif inv.verdict == 'false_positive' %}✅{% else %}⬆️{% endif %}</div>
+                <div class="completed-verdict">{{ inv.verdict.replace('_',' ').title() }}</div>
+                <div class="completed-score">+{{ inv.score }} pts earned</div>
+            </div>
+            <a href="{{ url_for('report', inv_id=inv.id) }}" class="btn btn-primary btn-full mt-4">View Report →</a>
+            {% endif %}
+
+            <!-- Result modal area -->
+            <div id="verdictResult" class="verdict-result" style="display:none"></div>
+        </div>
+
+        <!-- Quick links -->
+        <div class="quick-links-panel">
+            <h4 class="ql-title">Quick References</h4>
+            <a href="{{ url_for('log_viewer', alert_id=alert.id) }}" class="ql-link" target="_blank">View All Logs →</a>
+            <a href="https://attack.mitre.org" target="_blank" class="ql-link">MITRE ATT&CK →</a>
+            <a href="https://www.virustotal.com" target="_blank" class="ql-link">VirusTotal →</a>
+            <a href="https://otx.alienvault.com" target="_blank" class="ql-link">AlienVault OTX →</a>
+            <a href="https://www.shodan.io" target="_blank" class="ql-link">Shodan →</a>
+        </div>
+    </div>
+</div>
+
+<!-- Result modal -->
+<div class="modal-overlay" id="resultModal" style="display:none">
+    <div class="modal-box" id="resultBox"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const INV_ID = {{ inv.id }};
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+});
+
+// Toggle hint
+function toggleHint() {
+    const txt = document.getElementById('hintText');
+    const btn = document.querySelector('.hint-toggle');
+    const shown = txt.style.display !== 'none';
+    txt.style.display = shown ? 'none' : 'block';
+    btn.textContent = shown ? 'Show Hint' : 'Hide Hint';
+}
+
+// Log filtering
+function filterLogs() {
+    const q = document.getElementById('logSearch').value.toLowerCase();
+    document.querySelectorAll('.log-entry').forEach(el => {
+        el.style.display = el.dataset.raw.includes(q) ? '' : 'none';
+    });
+}
+
+let activeType = 'all';
+function filterLogType(type, btn) {
+    activeType = type;
+    document.querySelectorAll('.log-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.log-entry').forEach(el => {
+        el.style.display = (type === 'all' || el.dataset.logtype === type) ? '' : 'none';
+    });
+}
+
+// Save notes
+function saveNotes() {
+    const notes = document.getElementById('analystNotes').value;
+    fetch('/api/save_notes', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({inv_id: INV_ID, notes})
+    }).then(r => r.json()).then(d => {
+        if (d.success) showToast('Notes saved', 'success');
+    });
+}
+
+// Submit investigation
+function submitInvestigation(invId) {
+    const verdict = document.querySelector('input[name="verdict"]:checked');
+    if (!verdict) { showToast('Please select a verdict first', 'error'); return; }
+
+    const notes = document.getElementById('analystNotes').value;
+    const confirmedIOCs = [...document.querySelectorAll('.ioc-confirm-cb:checked')].map(cb => cb.dataset.ioc);
+
+    fetch('/submit_investigation', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({inv_id: invId, verdict: verdict.value, notes, ioc_confirmed: confirmedIOCs})
+    })
+    .then(r => r.json())
+    .then(data => {
+        const modal = document.getElementById('resultModal');
+        const box = document.getElementById('resultBox');
+        const correct = data.correct;
+
+        box.innerHTML = `
+            <div class="result-icon">${correct ? '🎯' : '❌'}</div>
+            <div class="result-title">${correct ? 'Correct!' : 'Incorrect'}</div>
+            <div class="result-msg">${data.message}</div>
+            <div class="result-score">+${data.score} points</div>
+            ${!correct ? `<div class="result-expected">Expected: <strong>${data.expected.replace('_',' ')}</strong></div>` : ''}
+            <div class="result-actions">
+                <button class="btn btn-primary" onclick="location.reload()">View Results</button>
+                <a href="/alerts" class="btn btn-ghost">Next Alert →</a>
+            </div>
+        `;
+        modal.style.display = 'flex';
+    });
+}
+
+// Auto-save notes every 30s
+setInterval(saveNotes, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}SOC Platform — Login{% endblock %}
+
+{% block auth_content %}
+<div class="login-page">
+    <div class="login-bg">
+        <div class="grid-overlay"></div>
+        <div class="scan-line"></div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-brand">
+            <svg class="login-logo" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="22" stroke="#00d4ff" stroke-width="2"/>
+                <circle cx="24" cy="24" r="10" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="4 2"/>
+                <circle cx="24" cy="24" r="3" fill="#00d4ff"/>
+                <line x1="24" y1="2" x2="24" y2="10" stroke="#00d4ff" stroke-width="2"/>
+                <line x1="24" y1="38" x2="24" y2="46" stroke="#00d4ff" stroke-width="2"/>
+                <line x1="2" y1="24" x2="10" y2="24" stroke="#00d4ff" stroke-width="2"/>
+                <line x1="38" y1="24" x2="46" y2="24" stroke="#00d4ff" stroke-width="2"/>
+            </svg>
+            <h1 class="login-title">SOC<span class="accent">Lab</span></h1>
+            <p class="login-subtitle">Security Operations Center Training Platform</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for cat, msg in messages %}
+            <div class="alert alert-{{ cat }}">{{ msg }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div class="login-card">
+            <div class="login-card-header">
+                <span class="terminal-prompt">analyst@soc:~$</span>
+                <span class="terminal-cmd"> authenticate</span>
+            </div>
+            <form method="POST" action="{{ url_for('login') }}" class="login-form">
+                <div class="form-group">
+                    <label class="form-label">USERNAME</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
+                        <input type="text" name="username" class="form-input" placeholder="analyst" autocomplete="username" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">PASSWORD</label>
+                    <div class="input-wrap">
+                        <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <input type="password" name="password" class="form-input" placeholder="••••••••" autocomplete="current-password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login">
+                    <span>AUTHENTICATE</span>
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                </button>
+            </form>
+            <div class="login-demo-creds">
+                <span class="creds-label">Demo credentials</span>
+                <div class="creds-row"><code>analyst</code> / <code>soc2024</code></div>
+            </div>
+        </div>
+
+        <div class="login-stats">
+            <div class="stat-pill"><span class="stat-num">50+</span> Scenarios</div>
+            <div class="stat-pill"><span class="stat-num">10</span> Categories</div>
+            <div class="stat-pill"><span class="stat-num">MITRE</span> ATT&CK Mapped</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

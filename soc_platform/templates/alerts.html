@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Alert Library — SOC Platform{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Alert Library</h1>
+        <p class="page-sub">{{ total }} scenarios across 10 attack categories</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+    <form method="GET" class="filter-form">
+        <div class="filter-group">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search alerts…" class="filter-input">
+        </div>
+        <div class="filter-group">
+            <select name="category" class="filter-select">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.category }}" {% if cat.category == category %}selected{% endif %}>{{ cat.category }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <select name="severity" class="filter-select">
+                <option value="">All Severities</option>
+                {% for s in ['critical','high','medium','low','info'] %}
+                <option value="{{ s }}" {% if s == severity %}selected{% endif %}>{{ s.title() }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('alert_library') }}" class="btn btn-ghost">Reset</a>
+    </form>
+</div>
+
+<!-- Category pills -->
+<div class="cat-pills">
+    {% set cats = ['Authentication Attacks','Malware','Phishing','Endpoint Security','Network Security','Active Directory','Cloud Security','Web Attacks','Data Exfiltration','Threat Hunting'] %}
+    {% for cat in cats %}
+    <a href="{{ url_for('alert_library', category=cat) }}" class="cat-pill {% if cat == category %}active{% endif %}">{{ cat }}</a>
+    {% endfor %}
+</div>
+
+<!-- Alert cards grid -->
+<div class="alerts-grid">
+    {% for alert in alerts %}
+    <div class="alert-card sev-border-{{ alert.severity }}">
+        <div class="alert-card-header">
+            <div class="sev-badge sev-{{ alert.severity }}">{{ alert.severity.upper() }}</div>
+            <div class="alert-card-status">
+                {% if alert.id in investigated %}
+                <span class="status-done">✓ Investigated</span>
+                {% else %}
+                <span class="status-open">● Open</span>
+                {% endif %}
+            </div>
+        </div>
+        <h3 class="alert-card-title">{{ alert.title }}</h3>
+        <p class="alert-card-desc">{{ alert.description[:120] }}…</p>
+        <div class="alert-card-meta">
+            <span class="cat-tag">{{ alert.category }}</span>
+            {% if alert.source_ip %}
+            <span class="mono text-xs">{{ alert.source_ip }}</span>
+            {% endif %}
+        </div>
+        <div class="alert-card-footer">
+            <div class="points-badge">{{ alert.points }} pts</div>
+            <a href="{{ url_for('investigate', alert_id=alert.id) }}" class="btn btn-sm btn-primary">
+                {% if alert.id in investigated %}Resume{% else %}Investigate{% endif %} →
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total > per_page %}
+<div class="pagination">
+    {% set pages = ((total - 1) // per_page) + 1 %}
+    {% for p in range(1, pages + 1) %}
+    <a href="{{ url_for('alert_library', page=p, category=category, severity=severity, search=search) }}"
+       class="page-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

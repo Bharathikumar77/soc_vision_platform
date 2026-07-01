@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SOC Platform{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+{% if session.get('user_id') %}
+<div class="app-shell">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="14" stroke="#00d4ff" stroke-width="2"/>
+                    <circle cx="16" cy="16" r="6" fill="#00d4ff" opacity="0.3"/>
+                    <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+                    <line x1="16" y1="2" x2="16" y2="8" stroke="#00d4ff" stroke-width="1.5"/>
+                    <line x1="16" y1="24" x2="16" y2="30" stroke="#00d4ff" stroke-width="1.5"/>
+                    <line x1="2" y1="16" x2="8" y2="16" stroke="#00d4ff" stroke-width="1.5"/>
+                    <line x1="24" y1="16" x2="30" y2="16" stroke="#00d4ff" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">SOC<span class="brand-accent">Lab</span></span>
+                <span class="brand-sub">Training Platform</span>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <span class="nav-label">OVERVIEW</span>
+            <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+                Dashboard
+            </a>
+            <a href="{{ url_for('leaderboard') }}" class="nav-item {% if request.endpoint == 'leaderboard' %}active{% endif %}">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                Leaderboard
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <span class="nav-label">INVESTIGATIONS</span>
+            <a href="{{ url_for('alert_library') }}" class="nav-item {% if request.endpoint == 'alert_library' %}active{% endif %}">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                Alert Library
+            </a>
+            <a href="{{ url_for('log_viewer') }}" class="nav-item {% if request.endpoint == 'log_viewer' %}active{% endif %}">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+                Log Viewer
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="analyst-badge">
+                <div class="analyst-avatar" style="background: {{ session.get('avatar_color', '#00d4ff') }}22; border-color: {{ session.get('avatar_color', '#00d4ff') }};">
+                    {{ session.get('username', 'A')[0].upper() }}
+                </div>
+                <div class="analyst-info">
+                    <span class="analyst-name">{{ session.get('username') }}</span>
+                    <span class="analyst-role">SOC Analyst</span>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+        <div class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+            </button>
+            <div class="topbar-right">
+                <div class="threat-pulse">
+                    <span class="pulse-dot"></span>
+                    <span class="pulse-text">LIVE MONITORING</span>
+                </div>
+                <div class="topbar-time" id="topbarTime"></div>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for cat, msg in messages %}
+            <div class="flash flash-{{ cat }}">{{ msg }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

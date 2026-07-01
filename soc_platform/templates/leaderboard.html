@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard — SOC Platform{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Analyst Leaderboard</h1>
+        <p class="page-sub">Top SOC analysts ranked by investigation score</p>
+    </div>
+    {% if my_rank %}
+    <div class="my-rank-badge">Your Rank: <strong>#{{ my_rank }}</strong></div>
+    {% endif %}
+</div>
+
+<!-- Top 3 podium -->
+{% if board|length >= 3 %}
+<div class="podium">
+    <!-- 2nd -->
+    <div class="podium-slot podium-2">
+        <div class="podium-avatar" style="background: {{ board[1].avatar_color }}22; border-color: {{ board[1].avatar_color }};">
+            {{ board[1].username[0].upper() }}
+        </div>
+        <div class="podium-name">{{ board[1].username }}</div>
+        <div class="podium-score">{{ board[1].total_score }} pts</div>
+        <div class="podium-block p2">2</div>
+    </div>
+    <!-- 1st -->
+    <div class="podium-slot podium-1">
+        <div class="podium-crown">👑</div>
+        <div class="podium-avatar" style="background: {{ board[0].avatar_color }}22; border-color: {{ board[0].avatar_color }};">
+            {{ board[0].username[0].upper() }}
+        </div>
+        <div class="podium-name">{{ board[0].username }}</div>
+        <div class="podium-score">{{ board[0].total_score }} pts</div>
+        <div class="podium-block p1">1</div>
+    </div>
+    <!-- 3rd -->
+    <div class="podium-slot podium-3">
+        <div class="podium-avatar" style="background: {{ board[2].avatar_color }}22; border-color: {{ board[2].avatar_color }};">
+            {{ board[2].username[0].upper() }}
+        </div>
+        <div class="podium-name">{{ board[2].username }}</div>
+        <div class="podium-score">{{ board[2].total_score }} pts</div>
+        <div class="podium-block p3">3</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Full leaderboard table -->
+<div class="leaderboard-table-wrap">
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Analyst</th>
+                <th>Badge</th>
+                <th>Investigations</th>
+                <th>Accuracy</th>
+                <th>Total Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in board %}
+            <tr class="{% if row.username == session.username %}lb-my-row{% endif %}">
+                <td class="lb-rank">
+                    {% if loop.index == 1 %}🥇
+                    {% elif loop.index == 2 %}🥈
+                    {% elif loop.index == 3 %}🥉
+                    {% else %}#{{ loop.index }}{% endif %}
+                </td>
+                <td class="lb-analyst">
+                    <div class="lb-avatar" style="background: {{ row.avatar_color }}22; border-color: {{ row.avatar_color }};">
+                        {{ row.username[0].upper() }}
+                    </div>
+                    <span>{{ row.username }}</span>
+                    {% if row.username == session.username %}<span class="you-badge">YOU</span>{% endif %}
+                </td>
+                <td><span class="lb-badge">{{ row.badge }}</span></td>
+                <td class="lb-count">{{ row.completed }}</td>
+                <td class="lb-accuracy">
+                    <div class="accuracy-bar-wrap">
+                        <div class="accuracy-bar" style="width: {{ row.accuracy|int }}%"></div>
+                        <span>{{ row.accuracy|int }}%</span>
+                    </div>
+                </td>
+                <td class="lb-score"><span class="score-badge">{{ row.total_score }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted">No analysts yet. Be the first!</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

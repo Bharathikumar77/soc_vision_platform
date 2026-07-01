@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SOC Platform{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Operations Dashboard</h1>
+        <p class="page-sub">Welcome back, <strong>{{ session.username }}</strong> — Stay sharp.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('alert_library') }}" class="btn btn-primary">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+            New Investigation
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card kpi-total">
+        <div class="kpi-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-value">{{ stats.total_alerts }}</div>
+            <div class="kpi-label">Total Alerts</div>
+        </div>
+        <div class="kpi-trend up">All Time</div>
+    </div>
+    <div class="kpi-card kpi-open">
+        <div class="kpi-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-value">{{ stats.open_alerts }}</div>
+            <div class="kpi-label">Open Alerts</div>
+        </div>
+        <div class="kpi-trend warn">Pending</div>
+    </div>
+    <div class="kpi-card kpi-critical">
+        <div class="kpi-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-value">{{ stats.critical_alerts }}</div>
+            <div class="kpi-label">Critical Severity</div>
+        </div>
+        <div class="kpi-trend danger">Urgent</div>
+    </div>
+    <div class="kpi-card kpi-done">
+        <div class="kpi-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-value">{{ stats.completed }}</div>
+            <div class="kpi-label">Investigations Done</div>
+        </div>
+        <div class="kpi-trend up">Your Work</div>
+    </div>
+    <div class="kpi-card kpi-score">
+        <div class="kpi-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-value">{{ stats.score }}</div>
+            <div class="kpi-label">Analyst Score</div>
+        </div>
+        <div class="kpi-trend up">XP Points</div>
+    </div>
+</div>
+
+<!-- Main grid -->
+<div class="dash-grid">
+    <!-- Recent alerts -->
+    <div class="dash-panel span-2">
+        <div class="panel-header">
+            <h2 class="panel-title">Recent Alerts</h2>
+            <a href="{{ url_for('alert_library') }}" class="panel-link">View All →</a>
+        </div>
+        <div class="alert-list">
+            {% for alert in recent_alerts %}
+            <div class="alert-row">
+                <div class="sev-badge sev-{{ alert.severity }}">{{ alert.severity[:4].upper() }}</div>
+                <div class="alert-row-info">
+                    <div class="alert-row-title">{{ alert.title }}</div>
+                    <div class="alert-row-meta">
+                        <span class="cat-tag">{{ alert.category }}</span>
+                        <span class="meta-sep">·</span>
+                        <span>{{ alert.hostname or 'N/A' }}</span>
+                        {% if alert.source_ip %}
+                        <span class="meta-sep">·</span>
+                        <span class="mono">{{ alert.source_ip }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="alert-row-status status-{{ alert.status }}">{{ alert.status }}</div>
+                <a href="{{ url_for('investigate', alert_id=alert.id) }}" class="btn btn-sm btn-ghost">Investigate →</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Categories chart -->
+    <div class="dash-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Alert Categories</h2>
+        </div>
+        <div class="cat-bars">
+            {% set max_count = category_counts[0].cnt if category_counts else 1 %}
+            {% for row in category_counts %}
+            <div class="cat-bar-row">
+                <span class="cat-bar-label">{{ row.category[:18] }}</span>
+                <div class="cat-bar-track">
+                    <div class="cat-bar-fill" style="width: {{ (row.cnt / max_count * 100)|int }}%"></div>
+                </div>
+                <span class="cat-bar-count">{{ row.cnt }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- My recent investigations -->
+    <div class="dash-panel span-2">
+        <div class="panel-header">
+            <h2 class="panel-title">My Investigations</h2>
+        </div>
+        {% if recent_inv %}
+        <div class="inv-list">
+            {% for inv in recent_inv %}
+            <div class="inv-row">
+                <div class="sev-badge sev-{{ inv.severity }}">{{ inv.severity[:4].upper() }}</div>
+                <div class="inv-row-info">
+                    <div class="inv-row-title">{{ inv.title }}</div>
+                    <div class="inv-row-meta">
+                        <span class="cat-tag">{{ inv.category }}</span>
+                        {% if inv.status == 'completed' %}
+                        <span class="score-badge">+{{ inv.score }} pts</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="inv-verdict verdict-{{ inv.verdict or 'pending' }}">
+                    {{ inv.verdict.replace('_',' ').title() if inv.verdict else 'In Progress' }}
+                </div>
+                {% if inv.status == 'completed' %}
+                <a href="{{ url_for('report', inv_id=inv.id) }}" class="btn btn-sm btn-ghost">Report →</a>
+                {% else %}
+                <a href="{{ url_for('investigate', alert_id=inv.alert_id) }}" class="btn btn-sm btn-primary">Continue →</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#334155" stroke-width="2"/><path d="M16 24h16M24 16v16" stroke="#475569" stroke-width="2" stroke-linecap="round"/></svg>
+            <p>No investigations yet.<br><a href="{{ url_for('alert_library') }}">Start your first one →</a></p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick access categories -->
+    <div class="dash-panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Quick Access</h2>
+        </div>
+        <div class="quick-cats">
+            {% set cats = [
+                ('Authentication Attacks','🔑'),('Malware','🦠'),('Phishing','🎣'),
+                ('Network Security','🌐'),('Active Directory','🏛️'),('Cloud Security','☁️'),
+                ('Web Attacks','💻'),('Data Exfiltration','📤'),('Endpoint Security','🖥️'),('Threat Hunting','🔍')
+            ] %}
+            {% for cat, icon in cats %}
+            <a href="{{ url_for('alert_library', category=cat) }}" class="quick-cat-btn">
+                <span class="qc-icon">{{ icon }}</span>
+                <span class="qc-label">{{ cat }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

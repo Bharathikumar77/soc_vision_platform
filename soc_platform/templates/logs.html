@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Log Viewer — SOC Platform{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Log Viewer</h1>
+        <p class="page-sub">Search and filter security logs across all scenarios</p>
+    </div>
+</div>
+
+<div class="log-viewer-page">
+    <!-- Filter sidebar -->
+    <div class="log-filter-sidebar">
+        <form method="GET" class="log-filter-form">
+            <h3 class="filter-title">Filters</h3>
+
+            <div class="filter-field">
+                <label class="filter-label">Alert Scenario</label>
+                <select name="alert_id" class="filter-select">
+                    <option value="">All Alerts</option>
+                    {% for a in alerts_list %}
+                    <option value="{{ a.id }}" {% if a.id|string == alert_id %}selected{% endif %}>
+                        {{ a.title[:35] }}{% if a.title|length > 35 %}…{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label class="filter-label">Log Type</label>
+                <select name="log_type" class="filter-select">
+                    <option value="">All Types</option>
+                    {% for lt in log_types %}
+                    <option value="{{ lt.log_type }}" {% if lt.log_type == log_type %}selected{% endif %}>
+                        {{ lt.log_type.replace('_',' ').title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-field">
+                <label class="filter-label">Source IP</label>
+                <input type="text" name="ip" value="{{ ip_filter }}" placeholder="e.g. 185.220.101" class="filter-input">
+            </div>
+
+            <div class="filter-field">
+                <label class="filter-label">Username</label>
+                <input type="text" name="user" value="{{ user_filter }}" placeholder="e.g. administrator" class="filter-input">
+            </div>
+
+            <div class="filter-field">
+                <label class="filter-label">Event ID</label>
+                <input type="text" name="event_id" value="{{ event_id }}" placeholder="e.g. 4625" class="filter-input">
+            </div>
+
+            <div class="filter-field">
+                <label class="filter-label">Full Text Search</label>
+                <input type="text" name="search" value="{{ search }}" placeholder="Search raw log content…" class="filter-input">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Apply Filters</button>
+            <a href="{{ url_for('log_viewer') }}" class="btn btn-ghost btn-full mt-2">Clear All</a>
+        </form>
+
+        <!-- Quick Event ID reference -->
+        <div class="event-id-ref">
+            <h4 class="ref-title">Common Event IDs</h4>
+            <div class="ref-list">
+                {% set evids = [
+                    ('4624','Successful Logon'),('4625','Failed Logon'),
+                    ('4648','Explicit Credentials'),('4662','AD Object Access'),
+                    ('4672','Special Logon'),('4688','Process Created'),
+                    ('4698','Sched Task Created'),('4720','User Account Created'),
+                    ('4740','Account Lockout'),('4769','Kerberos TGS Request'),
+                    ('7045','Service Installed'),
+                ] %}
+                {% for eid, desc in evids %}
+                <a href="{{ url_for('log_viewer', event_id=eid) }}" class="ref-item">
+                    <span class="ref-eid mono">{{ eid }}</span>
+                    <span class="ref-desc">{{ desc }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Log results -->
+    <div class="log-results">
+        <div class="log-results-header">
+            <span class="log-count">{{ logs|length }} log entries</span>
+            <div class="log-legend">
+                <span class="legend-item"><span class="log-type-tag type-windows_event"></span>Windows</span>
+                <span class="legend-item"><span class="log-type-tag type-linux_syslog"></span>Linux</span>
+                <span class="legend-item"><span class="log-type-tag type-firewall"></span>Firewall</span>
+                <span class="legend-item"><span class="log-type-tag type-web"></span>Web</span>
+                <span class="legend-item"><span class="log-type-tag type-email"></span>Email</span>
+                <span class="legend-item"><span class="log-type-tag type-edr"></span>EDR</span>
+            </div>
+        </div>
+
+        <div class="log-viewer" id="logResults">
+            {% for log in logs %}
+            <div class="log-entry {% if log.highlighted %}log-highlight{% endif %}">
+                <div class="log-entry-header">
+                    <span class="log-ts">{{ log.timestamp }}</span>
+                    <span class="log-type-tag type-{{ log.log_type }}">{{ log.log_type.replace('_',' ').upper() }}</span>
+                    {% if log.event_id %}<span class="log-evid">{{ log.event_id }}</span>{% endif %}
+                    {% if log.source_ip %}<span class="log-ip mono">{{ log.source_ip }}</span>{% endif %}
+                    {% if log.username %}<span class="log-user mono">{{ log.username }}</span>{% endif %}
+                    {% if log.alert_title %}<span class="log-alert-ref" title="{{ log.alert_title }}">📋 {{ log.alert_title[:30] }}{% if log.alert_title|length > 30 %}…{% endif %}</span>{% endif %}
+                    {% if log.highlighted %}<span class="log-ioc-flag">⚑ KEY</span>{% endif %}
+                </div>
+                <pre class="log-raw">{{ log.raw_log }}</pre>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" rx="4" stroke="#334155" stroke-width="2"/><line x1="14" y1="18" x2="34" y2="18" stroke="#475569" stroke-width="1.5"/><line x1="14" y1="24" x2="28" y2="24" stroke="#475569" stroke-width="1.5"/><line x1="14" y1="30" x2="24" y2="30" stroke="#475569" stroke-width="1.5"/></svg>
+                <p>No logs match your filters.<br>Try adjusting your search criteria.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

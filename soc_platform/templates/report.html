@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Incident Report — SOC Platform{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('dashboard') }}" class="breadcrumb">← Dashboard</a>
+        <h1 class="page-title">Incident Report</h1>
+        <p class="page-sub">Generated {{ report_date }}</p>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-ghost" onclick="window.print()">🖨 Print Report</button>
+    </div>
+</div>
+
+<div class="report-body" id="reportBody">
+    <!-- Report Header -->
+    <div class="report-header-block">
+        <div class="report-meta-grid">
+            <div class="report-meta-item">
+                <span class="report-meta-key">Report ID</span>
+                <span class="report-meta-val mono">INC-{{ inv.id }}-{{ report_date[:10].replace('-','') }}</span>
+            </div>
+            <div class="report-meta-item">
+                <span class="report-meta-key">Analyst</span>
+                <span class="report-meta-val">{{ session.username }}</span>
+            </div>
+            <div class="report-meta-item">
+                <span class="report-meta-key">Severity</span>
+                <span class="sev-badge sev-{{ inv.severity }}">{{ inv.severity.upper() }}</span>
+            </div>
+            <div class="report-meta-item">
+                <span class="report-meta-key">Verdict</span>
+                <span class="inv-verdict verdict-{{ inv.verdict }}">{{ inv.verdict.replace('_',' ').title() }}</span>
+            </div>
+            <div class="report-meta-item">
+                <span class="report-meta-key">Category</span>
+                <span class="report-meta-val">{{ inv.category }}</span>
+            </div>
+            <div class="report-meta-item">
+                <span class="report-meta-key">Score</span>
+                <span class="report-meta-val score-badge">+{{ inv.score }} pts</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Title -->
+    <div class="report-section">
+        <h2 class="report-section-title">1. Alert Summary</h2>
+        <div class="report-card">
+            <h3 class="report-alert-title">{{ inv.title }}</h3>
+            <p class="report-alert-desc">{{ inv.description }}</p>
+            <div class="report-info-grid">
+                <div class="report-info-item"><span class="ri-key">Source</span><span class="ri-val mono">{{ inv.source or 'N/A' }}</span></div>
+                <div class="report-info-item"><span class="ri-key">Source IP</span><span class="ri-val mono">{{ inv.source_ip or 'N/A' }}</span></div>
+                <div class="report-info-item"><span class="ri-key">Hostname</span><span class="ri-val mono">{{ inv.hostname or 'N/A' }}</span></div>
+                <div class="report-info-item"><span class="ri-key">Username</span><span class="ri-val mono">{{ inv.username or 'N/A' }}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MITRE ATT&CK -->
+    <div class="report-section">
+        <h2 class="report-section-title">2. MITRE ATT&CK Mapping</h2>
+        <div class="report-card">
+            {% if inv.mitre_mapping %}
+            <div class="mitre-report-row">
+                <div class="mitre-report-badge">{{ inv.mitre_mapping.get('technique','N/A') }}</div>
+                <div>
+                    <div class="mitre-report-name">{{ inv.mitre_mapping.get('name','N/A') }}</div>
+                    <div class="mitre-report-tactic">Tactic: {{ inv.mitre_mapping.get('tactic','N/A') }}</div>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-muted">No MITRE mapping available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    {% if timeline %}
+    <div class="report-section">
+        <h2 class="report-section-title">3. Attack Timeline</h2>
+        <div class="report-card">
+            <div class="report-timeline">
+                {% for event in timeline %}
+                <div class="report-tl-item">
+                    <span class="report-tl-time mono">{{ event.event_time }}</span>
+                    <span class="sev-dot sev-{{ event.severity }}"></span>
+                    <div class="report-tl-content">
+                        <strong>{{ event.event_type }}</strong> — {{ event.description }}
+                        <span class="report-tl-source">[{{ event.source }}]</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- IOCs -->
+    {% if iocs %}
+    <div class="report-section">
+        <h2 class="report-section-title">4. Indicators of Compromise</h2>
+        <div class="report-card">
+            <table class="report-table">
+                <thead>
+                    <tr><th>Type</th><th>Value</th><th>Description</th><th>Verdict</th></tr>
+                </thead>
+                <tbody>
+                    {% for ioc in iocs %}
+                    <tr>
+                        <td><span class="ioc-type-badge">{{ ioc.ioc_type.upper() }}</span></td>
+                        <td class="mono">{{ ioc.value }}</td>
+                        <td>{{ ioc.description }}</td>
+                        <td>{% if ioc.malicious %}<span class="verdict-malicious">Malicious</span>{% else %}<span class="verdict-benign">Benign</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Host & User -->
+    <div class="report-section">
+        <h2 class="report-section-title">5. Affected Assets</h2>
+        <div class="two-col">
+            <div class="report-card">
+                <h4 class="report-subsection">Host Information</h4>
+                {% if inv.host_info %}
+                <div class="info-table">
+                    {% for k, v in inv.host_info.items() %}
+                    <div class="info-row">
+                        <span class="info-key">{{ k.replace('_',' ').title() }}</span>
+                        <span class="info-val">{% if v is iterable and v is not string %}{{ v|join(', ') }}{% else %}{{ v }}{% endif %}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}<p class="text-muted">N/A</p>{% endif %}
+            </div>
+            <div class="report-card">
+                <h4 class="report-subsection">User Information</h4>
+                {% if inv.user_info %}
+                <div class="info-table">
+                    {% for k, v in inv.user_info.items() %}
+                    <div class="info-row">
+                        <span class="info-key">{{ k.replace('_',' ').title() }}</span>
+                        <span class="info-val">{{ v }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}<p class="text-muted">N/A</p>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyst Notes & Findings -->
+    <div class="report-section">
+        <h2 class="report-section-title">6. Analyst Findings</h2>
+        <div class="report-card">
+            <h4 class="report-subsection">Analyst Notes</h4>
+            <div class="report-notes">{{ inv.analyst_notes or 'No analyst notes recorded.' }}</div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="report-section">
+        <h2 class="report-section-title">7. Recommendations</h2>
+        <div class="report-card">
+            <div class="report-notes solution-text">{{ inv.solution_explanation or 'See solution explanation in platform.' }}</div>
+        </div>
+    </div>
+
+    <!-- Report Footer -->
+    <div class="report-footer">
+        <p>This report was generated by SOC Training Platform. For training purposes only.</p>
+        <p class="mono">Report ID: INC-{{ inv.id }}-{{ report_date[:10].replace('-','') }} | Analyst: {{ session.username }} | {{ report_date }}</p>
+    </div>
+</div>
+{% endblock %}
